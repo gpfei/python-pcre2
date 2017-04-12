@@ -1,5 +1,5 @@
 # python-pcre2
-A Python wrapper of [PCRE2](http://www.pcre.org/)
+A simple Python wrapper of [PCRE2](http://www.pcre.org/)
 
 
 ### Requirements
@@ -44,7 +44,7 @@ For non-Latin word (`\w`) match, you should specify UTF and UCP option:
 
 ### UTF-16/32 Support
 
-If you want to match UTF-16 bytes (UTF-32 is similar), you could change the settings in `setup.py`, then reinstall.
+If you want to match UTF-16 bytes (UTF-32 is similar), you could change the settings in `setup.py` and then reinstall.
 
 ```python
 
