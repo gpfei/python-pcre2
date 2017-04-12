@@ -27,7 +27,7 @@ b'world'
 For non-Latin word (`\w`) match, you should specify UTF and UCP option:
 
 ```python
->>> p = pcre2.PCRE2('(北京)(\w+)广场'.encode(), pcre2.UTF | pcre2.UCP)
+>>> p = pcre2.PCRE2(r'(北京)(\w+)广场'.encode(), pcre2.UTF | pcre2.UCP)
 >>> result = p.search('我来到北京敏感词广场看日出东方'.encode())
 >>> result.groups()
 [b'\xe5\x8c\x97\xe4\xba\xac', b'\xe6\x95\x8f\xe6\x84\x9f\xe8\xaf\x8d']
