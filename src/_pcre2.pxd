@@ -5,6 +5,11 @@ cdef extern from "pcre2.h":
         PCRE2_ZERO_TERMINATED
         PCRE2_ERROR_NOMATCH
 
+        # jit
+        PCRE2_JIT_COMPLETE
+        PCRE2_JIT_PARTIAL_SOFT
+        PCRE2_JIT_PARTIAL_HARD
+
         # compile options
         PCRE2_ALLOW_EMPTY_CLASS
         PCRE2_ALT_BSUX
@@ -58,6 +63,9 @@ cdef extern from "pcre2.h":
     # compile and match
     pcre2_code *pcre2_compile(PCRE2_SPTR, PCRE2_SIZE, uint32_t, int *, PCRE2_SIZE *, pcre2_compile_context *)
     int pcre2_match(const pcre2_code *, PCRE2_SPTR, PCRE2_SIZE, PCRE2_SIZE, uint32_t, pcre2_match_data *, pcre2_match_context *)
+    # jit
+    int pcre2_jit_compile(pcre2_code *, uint32_t)
+    int pcre2_jit_match(const pcre2_code *, PCRE2_SPTR, PCRE2_SIZE, PCRE2_SIZE, uint32_t, pcre2_match_data *, pcre2_match_context *)
 
     # match data
     pcre2_match_data *pcre2_match_data_create_from_pattern(const pcre2_code *, pcre2_general_context *)

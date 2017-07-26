@@ -6,6 +6,15 @@ from libc.string cimport memcpy, memset, strlen
 
 cimport _pcre2
 
+ctypedef int(*match_func_type)(
+        const _pcre2.pcre2_code *,
+        _pcre2.PCRE2_SPTR,
+        _pcre2.PCRE2_SIZE,
+        _pcre2.PCRE2_SIZE,
+        uint32_t,
+        _pcre2.pcre2_match_data *,
+        _pcre2.pcre2_match_context *)
+
 
 ALLOW_EMPTY_CLASS = _pcre2.PCRE2_ALLOW_EMPTY_CLASS
 ALT_BSUX = _pcre2.PCRE2_ALT_BSUX
@@ -39,8 +48,12 @@ cdef class PCRE2:
     cdef _pcre2.PCRE2_SIZE error_offset
     cdef _pcre2.pcre2_code* re_code
     cdef _pcre2.pcre2_match_data* match_data
+    cdef match_func_type match_func
 
-    def __cinit__(self, bytes pattern, uint32_t options=0):
+    def __cinit__(self,
+                  bytes pattern,
+                  uint32_t options=0,
+                  uint32_t jit_option=_pcre2.PCRE2_JIT_COMPLETE):
         cdef size_t length = len(pattern)
         self._pattern = <unsigned char *>PyMem_Malloc((length + 1) * sizeof(unsigned char))
         if not self._pattern:
@@ -58,15 +71,19 @@ cdef class PCRE2:
             NULL
         )
         if not self.re_code:
-            print('Failed to compile pattern at offset:', self.error_offset)
-            raise ValueError
+            raise ValueError(
+                'Failed to compile pattern at offset: {}.'.format(self.error_offset))
 
+        if _pcre2.pcre2_jit_compile(self.re_code, jit_option) == 0:
+            self.match_func = _pcre2.pcre2_jit_match
+        else:
+            self.match_func = _pcre2.pcre2_match
         self.match_data = _pcre2.pcre2_match_data_create_from_pattern(self.re_code, NULL)
 
     def search(self, bytes content, int offset=0):
         cdef int match_count
 
-        match_count = _pcre2.pcre2_match(
+        match_count = self.match_func(
             self.re_code,
             <_pcre2.PCRE2_SPTR>content,
             len(content),
