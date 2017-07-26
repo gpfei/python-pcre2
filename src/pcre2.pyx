@@ -15,7 +15,12 @@ ctypedef int(*match_func_type)(
         _pcre2.pcre2_match_data *,
         _pcre2.pcre2_match_context *)
 
+# jit
+JIT_COMPLETE = _pcre2.PCRE2_JIT_COMPLETE
+JIT_PARTIAL_SOFT = _pcre2.PCRE2_JIT_PARTIAL_SOFT
+JIT_PARTIAL_HARD = _pcre2.PCRE2_JIT_PARTIAL_HARD
 
+# compile options
 ALLOW_EMPTY_CLASS = _pcre2.PCRE2_ALLOW_EMPTY_CLASS
 ALT_BSUX = _pcre2.PCRE2_ALT_BSUX
 AUTO_CALLOUT = _pcre2.PCRE2_AUTO_CALLOUT
