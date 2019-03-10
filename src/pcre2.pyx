@@ -4,7 +4,7 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from libc.stdint cimport uint32_t
 from libc.string cimport memcpy, memset, strlen
 
-cimport _pcre2
+from src cimport _pcre2
 
 ctypedef int(*match_func_type)(
         const _pcre2.pcre2_code *,
