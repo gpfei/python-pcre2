@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
 
-from Cython.Build import cythonize
+#from Cython.Build import cythonize
 
 
 extensions = [
@@ -30,11 +30,16 @@ setup(
         ],
     },
 
+    setup_requires = [
+        'setuptools>=18.0',
+        'cython',
+    ], 
+
     install_requires = [
         'Cython',
     ],
 
-    ext_modules = cythonize(extensions),
+    ext_modules = extensions,
 
     author = 'Gu Pengfei',
     author_email = 'gpfei96@gmail.com',
