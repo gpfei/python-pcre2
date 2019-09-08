@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
 
-from Cython.Build import cythonize
+#from Cython.Build import cythonize
 
 
 extensions = [
@@ -21,7 +21,7 @@ extensions = [
 
 setup(
     name = 'pcre2',
-    version = '0.1',
+    version = '0.2',
     packages = find_packages(),
     include_package_data = True,
 
@@ -30,11 +30,16 @@ setup(
         ],
     },
 
+    setup_requires = [
+        'setuptools>=18.0',
+        'cython',
+    ], 
+
     install_requires = [
         'Cython',
     ],
 
-    ext_modules = cythonize(extensions),
+    ext_modules = extensions,
 
     author = 'Gu Pengfei',
     author_email = 'gpfei96@gmail.com',

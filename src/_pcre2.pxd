@@ -63,6 +63,8 @@ cdef extern from "pcre2.h":
     # compile and match
     pcre2_code *pcre2_compile(PCRE2_SPTR, PCRE2_SIZE, uint32_t, int *, PCRE2_SIZE *, pcre2_compile_context *)
     int pcre2_match(const pcre2_code *, PCRE2_SPTR, PCRE2_SIZE, PCRE2_SIZE, uint32_t, pcre2_match_data *, pcre2_match_context *)
+    # Alternative algorithm (said DFA but rather TNFA)
+    int pcre2_dfa_match(const pcre2_code *, PCRE2_SPTR, PCRE2_SIZE, PCRE2_SIZE, uint32_t, pcre2_match_data *, pcre2_match_context *, int*, PCRE2_SIZE)
     # jit
     int pcre2_jit_compile(pcre2_code *, uint32_t)
     int pcre2_jit_match(const pcre2_code *, PCRE2_SPTR, PCRE2_SIZE, PCRE2_SIZE, uint32_t, pcre2_match_data *, pcre2_match_context *)

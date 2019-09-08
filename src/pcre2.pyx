@@ -15,6 +15,17 @@ ctypedef int(*match_func_type)(
         _pcre2.pcre2_match_data *,
         _pcre2.pcre2_match_context *)
 
+ctypedef int(*dfa_match_func_type)(
+        const _pcre2.pcre2_code *,
+        _pcre2.PCRE2_SPTR,
+        _pcre2.PCRE2_SIZE,
+        _pcre2.PCRE2_SIZE,
+        uint32_t,
+        _pcre2.pcre2_match_data *,
+        _pcre2.pcre2_match_context *,
+        int *,
+        _pcre2.PCRE2_SIZE)
+
 # jit
 JIT_COMPLETE = _pcre2.PCRE2_JIT_COMPLETE
 JIT_PARTIAL_SOFT = _pcre2.PCRE2_JIT_PARTIAL_SOFT
@@ -48,21 +59,27 @@ USE_OFFSET_LIMIT = _pcre2.PCRE2_USE_OFFSET_LIMIT
 
 
 cdef class PCRE2:
+    cdef bint use_alternative_algorithm
     cdef unsigned char * _pattern
+    cdef int * _workspace
+    cdef _pcre2.PCRE2_SIZE _workspace_len
     cdef int error_number
     cdef _pcre2.PCRE2_SIZE error_offset
     cdef _pcre2.pcre2_code* re_code
     cdef _pcre2.pcre2_match_data* match_data
     cdef match_func_type match_func
+    cdef dfa_match_func_type dfa_match_func
 
     def __cinit__(self,
                   bytes pattern,
                   uint32_t options=0,
-                  uint32_t jit_option=_pcre2.PCRE2_JIT_COMPLETE):
+                  uint32_t jit_option=_pcre2.PCRE2_JIT_COMPLETE,
+                  bint use_alternative_algorithm=False):
         cdef size_t length = len(pattern)
         self._pattern = <unsigned char *>PyMem_Malloc((length + 1) * sizeof(unsigned char))
         if not self._pattern:
             raise MemoryError()
+        self.use_alternative_algorithm = use_alternative_algorithm
 
         memcpy(self._pattern, <unsigned char *>pattern, length)
         self._pattern[length] = b'\0'
@@ -79,24 +96,44 @@ cdef class PCRE2:
             raise ValueError(
                 'Failed to compile pattern at offset: {}.'.format(self.error_offset))
 
-        if _pcre2.pcre2_jit_compile(self.re_code, jit_option) == 0:
-            self.match_func = _pcre2.pcre2_jit_match
+        if not use_alternative_algorithm:
+            if _pcre2.pcre2_jit_compile(self.re_code, jit_option) == 0:
+                self.match_func = _pcre2.pcre2_jit_match
+            else:
+                self.match_func = _pcre2.pcre2_match
         else:
-            self.match_func = _pcre2.pcre2_match
+            self.dfa_match_func = _pcre2.pcre2_dfa_match
+            self._workspace_len = 1000
+            self._workspace = <int*>PyMem_Malloc(self._workspace_len*sizeof(int))
+            if not self._workspace:
+                raise MemoryError()
         self.match_data = _pcre2.pcre2_match_data_create_from_pattern(self.re_code, NULL)
 
     def search(self, bytes content, int offset=0):
         cdef int match_count
 
-        match_count = self.match_func(
-            self.re_code,
-            <_pcre2.PCRE2_SPTR>content,
-            len(content),
-            offset,
-            0,
-            self.match_data,
-            NULL
-        )
+        if self.use_alternative_algorithm:
+            match_count = self.dfa_match_func(
+                self.re_code,
+                <_pcre2.PCRE2_SPTR>content,
+                len(content),
+                offset,
+                0,
+                self.match_data,
+                NULL,
+                <int*>self._workspace,
+                self._workspace_len
+            )
+        else:
+            match_count = self.match_func(
+                self.re_code,
+                <_pcre2.PCRE2_SPTR>content,
+                len(content),
+                offset,
+                0,
+                self.match_data,
+                NULL
+            )
         if match_count < 0:
             if match_count == _pcre2.PCRE2_ERROR_NOMATCH:
                 # Not found
@@ -108,7 +145,7 @@ cdef class PCRE2:
         if match_count == 0:
             print("ovector was not big enough for all the captured substrings")
 
-        return ResultFactory(content, match_count, self.match_data)
+        return ResultFactory(content, match_count, self.match_data, self.use_alternative_algorithm)
 
     def __dealloc__(self):
         if self._pattern:
@@ -120,10 +157,12 @@ cdef class PCRE2:
         if self.re_code:
             _pcre2.pcre2_code_free(self.re_code)
             self.re_code = NULL
+        if self.use_alternative_algorithm:
+            PyMem_Free(self._workspace)
 
 
-cdef Result ResultFactory(bytes content, int match_count, _pcre2.pcre2_match_data* match_data):
-    cdef Result res = Result()
+cdef Result ResultFactory(bytes content, int match_count, _pcre2.pcre2_match_data* match_data, bint use_alternative_algorithm):
+    cdef Result res = Result(use_alternative_algorithm=use_alternative_algorithm)
     cdef bytes substring
     cdef _pcre2.PCRE2_SIZE* ovector = _pcre2.pcre2_get_ovector_pointer(match_data)
     cdef int i
@@ -137,15 +176,21 @@ cdef Result ResultFactory(bytes content, int match_count, _pcre2.pcre2_match_dat
 
 cdef class Result:
     cdef list matches
+    cdef bint use_alternative_algorithm
 
-    def __init__(self):
+    def __init__(self, use_alternative_algorithm=False):
         self.matches = list()
+        self.use_alternative_algorithm = use_alternative_algorithm
 
     def add_match(self, bytes substring):
         self.matches.append(substring)
 
     def group(self, index):
+        if self.use_alternative_algorithm:
+            raise NotImplementedError('Alternative algorithme cannot capture subexpressions')
         return self.matches[index]
 
     def groups(self):
+        if self.use_alternative_algorithm:
+            raise NotImplementedError('Alternative algorithme cannot capture subexpressions')
         return self.matches[1:]

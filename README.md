@@ -5,7 +5,7 @@ A simple Python wrapper of [PCRE2](http://www.pcre.org/)
 ### Requirements
 - Python 3.5+
 - Cython
-- libpcre2
+- libpcre2 + header file
 
 
 ### Example
